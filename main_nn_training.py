@@ -1,65 +1,9 @@
 import pylab as pl
 import numpy as np
 import random
+import nn_functions as nnf
 from tqdm import tqdm
 from sklearn.datasets import load_digits
-
-
-def derivative(x):
-    return x * (1 - x)
-
-
-def sigmoid(x):
-    # return 1 / (1 + np.exp(-x))  # this gives an overflow --> it is not important
-    return .5 * (1 + np.tanh(.5 * x))  # same as previous --> solves the overflow problem
-
-
-def preprocess_y(y, labels_num):
-    processed_y = np.zeros((len(y), labels_num))
-    for x in range(0, len(y)):
-        processed_y[x][y[x]] = 1
-    return processed_y
-
-
-def postprocess_y(y):
-    processed_y = np.zeros(len(y))
-    for x in range(0, len(y)):
-        index = np.where(y[x] == 1)[0]
-        if len(index) > 1 or len(index) == 0:
-            processed_y[x] = -1
-        else:
-            processed_y[x] = index
-    return processed_y.astype(np.int32)
-
-
-def get_accuracy(y1, y2):
-    size = len(y1)
-    count = 0
-    for x in range(0, size):
-        if y1[x] == y2[x]:
-            count += 1
-    return (count * 100) / size
-
-
-def compute_prediction(X, syn0, syn1):
-    a1 = X
-    a2 = sigmoid(np.dot(a1, syn0))
-    a3 = sigmoid(np.dot(a2, syn1))
-    return a1, a2, a3
-
-
-def revise_output(data):
-    data[data >= 0.5] = 1
-    data[data < 0.5] = 0
-    return data
-
-
-def even_data(data, num=1, img_dim=1, is_input=True):
-    if is_input:
-        return np.ravel(data).reshape((num, img_dim))
-    else:
-        return data.reshape((num, 1))
-
 
 # ==========================
 # IMPORTING THE DATA
@@ -113,11 +57,11 @@ chosen_testing_outputs = targets[testing_indexes]
 
 # convert from matrices into arrays
 # training sets
-training_input = even_data(chosen_training_images, num=images_num_training_set, img_dim=_image_dimension)
-training_outputs = even_data(chosen_training_outputs, num=images_num_training_set, is_input=False)
+training_input = nnf.even_data(chosen_training_images, num=images_num_training_set, img_dim=_image_dimension)
+training_outputs = nnf.even_data(chosen_training_outputs, num=images_num_training_set, is_input=False)
 # testing sets
-testing_input = even_data(chosen_testing_images, num=images_num_testing_set, img_dim=_image_dimension)
-testing_outputs = even_data(chosen_testing_outputs, num=images_num_testing_set, is_input=False)
+testing_input = nnf.even_data(chosen_testing_images, num=images_num_testing_set, img_dim=_image_dimension)
+testing_outputs = nnf.even_data(chosen_testing_outputs, num=images_num_testing_set, is_input=False)
 
 # ==========================
 # INITIALIZING THE NEURAL NETWORK
@@ -130,7 +74,7 @@ X = training_input
 
 # output data
 # Pre-processing output data for a multi-label classification (i.e. (3)-->[0 0 0 1 0 0 0 0 0 0])
-Yin = preprocess_y(training_outputs, _labels_num)
+Yin = nnf.preprocess_y(training_outputs, _labels_num)
 
 # setting a default random each program start
 # np.random.seed(1)
@@ -146,13 +90,13 @@ syn1 = 2 * np.random.random((hidden_nodes_n, _output_nodes_n)) - 1  # 20x10 matr
 print("Training the neural network")
 progress_bar = tqdm(total=num_eras)
 for j in range(num_eras):
-    (a1, a2, a3) = compute_prediction(X, syn0, syn1)
+    (a1, a2, a3) = nnf.compute_prediction(X, syn0, syn1)
 
     a3_error = Yin - a3
-    a3_delta = a3_error * sigmoid(derivative(a3))
+    a3_delta = a3_error * nnf.sigmoid(nnf.derivative(a3))
 
     a2_error = a3_delta.dot(syn1.T)  # transposed matrix
-    a2_delta = a2_error * sigmoid(derivative(a2))
+    a2_delta = a2_error * nnf.sigmoid(nnf.derivative(a2))
 
     # if (j % 200) == 0:
     #   print("Error: " + str(np.mean(np.abs(a3_error))))
@@ -166,36 +110,40 @@ for j in range(num_eras):
 progress_bar.close()
 
 # print("Output after training")
-a3 = revise_output(a3)
+a3 = nnf.revise_output(a3)
 
-Yout_training = postprocess_y(a3)
+Yout_training = nnf.postprocess_y(a3)
 # print("Original: ")
 # print(chosen_training_outputs)
 # print("Calculated: ")
 # print(Yout_training)
-accuracy = get_accuracy(chosen_training_outputs, Yout_training)
+accuracy = nnf.get_accuracy(chosen_training_outputs, Yout_training)
 print("Training accuracy: " + str(accuracy) + "%")
 
 # ==========================
 # TESTING PHASE
 # ==========================
 print("Testing unknown images")
-(a1, a2, a3) = compute_prediction(testing_input, syn0, syn1)
+(a1, a2, a3) = nnf.compute_prediction(testing_input, syn0, syn1)
 # print("Output after testing")
-a3_testing = revise_output(a3)
-Yout_testing = postprocess_y(a3_testing)
+a3_testing = nnf.revise_output(a3)
+Yout_testing = nnf.postprocess_y(a3_testing)
 # print("Original (testing): ")
 # print(chosen_testing_outputs)
 # print("Calculated (testing): ")
 # print(Yout_testing)
-accuracy_testing = get_accuracy(chosen_testing_outputs, Yout_testing)
+accuracy_testing = nnf.get_accuracy(chosen_testing_outputs, Yout_testing)
 print("Testing accuracy: " + str(accuracy_testing) + "%")
 
 # ==========================
 # STORING WEIGHTS
 # ==========================
-syn0_filename = 'syn0_eras_' + str(num_eras) + '_num_train_' + str(images_num_training_set) + '.txt'
-syn1_filename = 'syn1_eras_' + str(num_eras) + '_num_train_' + str(images_num_training_set) + '.txt'
+postfix_filename = '_eras_' + str(num_eras) + '_num_train_' + str(
+    images_num_training_set) + '_' + str(_input_nodes_n) + 'x' + str(hidden_nodes_n) + 'x' + str(
+    _output_nodes_n) + '.txt'
+
+syn0_filename = 'syn0' + postfix_filename
+syn1_filename = 'syn1' + postfix_filename
 
 np.savetxt(syn0_filename, syn0)
 np.savetxt(syn1_filename, syn1)
