@@ -1,7 +1,6 @@
-import scipy
-import matplotlib.pyplot as plt
 import pylab as pl
 import numpy as np
+from tqdm import tqdm
 from sklearn.datasets import load_digits
 
 
@@ -10,7 +9,8 @@ def derivative(x):
 
 
 def sigmoid(x):
-    return 1 / (1 + np.exp(-x))  # this gives an overflow --> it is not important
+    # return 1 / (1 + np.exp(-x))  # this gives an overflow --> it is not important
+    return .5 * (1 + np.tanh(.5 * x))  # same as previous --> solves the overflow problem
 
 
 def preprocess_y(y, labels_num):
@@ -24,7 +24,7 @@ def postprocess_y(y):
     processed_y = np.zeros(len(y))
     for x in range(0, len(y)):
         index = np.where(y[x] == 1)[0]
-        if len(index) > 1:
+        if len(index) > 1 or len(index) == 0:
             processed_y[x] = -1
         else:
             processed_y[x] = index
@@ -40,9 +40,37 @@ def get_accuracy(y1, y2):
     return (count * 100) / size
 
 
+def compute_prediction(X, syn0, syn1):
+    a1 = X
+    a2 = sigmoid(np.dot(a1, syn0))
+    a3 = sigmoid(np.dot(a2, syn1))
+    return a1, a2, a3
+
+
+def revise_output(data):
+    data[data >= 0.5] = 1
+    data[data < 0.5] = 0
+    return data
+
+
+def even_data(data, num=1, img_dim=1, is_input=True):
+    if is_input:
+        return np.ravel(data).reshape((num, img_dim))
+    else:
+        return data.reshape((num, 1))
+
+
+# ==========================
+# IMPORTING THE DATA
+# ==========================
+
 # import the dataset
 digits = load_digits()
 (data, targets) = load_digits(return_X_y=True)
+
+# ==========================
+# VISUALIZING AN IMAGE
+# ==========================
 
 # show the first image of the dataset
 # pl.gray()
@@ -50,68 +78,106 @@ digits = load_digits()
 # pl.show()
 # prints the matrix which composes the image
 
-# get the training set of 50 images
-number_of_images = 50
-image_dimension = 64
-labels_num = 10
+# ==========================
+# INITIALIZING PARAMETERS
+# ==========================
 
-# select the first 50 images and their targets
-chosen_images = digits.images[:number_of_images]
-chosen_outputs = targets[:number_of_images]
+images_num_training_set = 100  # number of images in the training set
+images_num_testing_set = 10  # number of images in the testing set
+hidden_nodes_n = 20  # set the number of hidden layers (between 64 and 10)
+num_eras = 10000  # number of eras in the training phase
+
+# semi-static fields
+_image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
+_labels_num = 10  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
+
+# ==========================
+# SELECTING THE DATA
+# ==========================
+
+# select the images and their targets for the training and the testing sets
+chosen_training_images = digits.images[:images_num_training_set]
+chosen_training_outputs = targets[:images_num_training_set]
+
+chosen_testing_images = digits.images[images_num_training_set:images_num_training_set + images_num_testing_set]
+chosen_testing_outputs = targets[images_num_training_set:images_num_training_set + images_num_testing_set]
 
 # convert from matrices into arrays
-training_set = np.ravel(chosen_images).reshape((number_of_images, image_dimension))
-training_outputs = chosen_outputs.reshape((number_of_images, 1))
+# training sets
+training_input = even_data(chosen_training_images, num=images_num_training_set, img_dim=_image_dimension)
+training_outputs = even_data(chosen_training_outputs, num=images_num_training_set, is_input=False)
+# testing sets
+testing_input = even_data(chosen_testing_images, num=images_num_testing_set, img_dim=_image_dimension)
+testing_outputs = even_data(chosen_testing_outputs, num=images_num_testing_set, is_input=False)
 
-# starting the neural network phase
-input_nodes_n = image_dimension  # because the images are 8x8 pixes = 64 pixels
-hidden_nodes_n = 20  # just picked a value
-output_nodes_n = labels_num  # numbers from 0 to 9
+# ==========================
+# INITIALIZING THE NEURAL NETWORK
+# ==========================
+_input_nodes_n = _image_dimension  # because the images are 8x8 pixes = 64 pixels
+_output_nodes_n = _labels_num  # numbers from 0 to 9
 
 # input data
-X = training_set
+X = training_input
 
 # output data
 # Pre-processing output data for a multi-label classification (i.e. (3)-->[0 0 0 1 0 0 0 0 0 0])
-Y = preprocess_y(training_outputs, labels_num)
+Yin = preprocess_y(training_outputs, _labels_num)
 
 # setting a default random each program start
-np.random.seed(1)
+# np.random.seed(1)
 
 # building a 64-20-10 neural network (NO BIAS)
 # synapses matrices (theta weights)
-syn0 = 2 * np.random.random((64, 20)) - 1  # 64x20 matrix with random weights
-syn1 = 2 * np.random.random((20, 10)) - 1  # 20x10 matrix with random weights
+syn0 = 2 * np.random.random((_input_nodes_n, hidden_nodes_n)) - 1  # 64x20 matrix with random weights
+syn1 = 2 * np.random.random((hidden_nodes_n, _output_nodes_n)) - 1  # 20x10 matrix with random weights
 
-
-# training step
-num_eras = 20000
+# ==========================
+# TRAINING PHASE
+# ==========================
+print("Training the neural network")
+progress_bar = tqdm(total=num_eras)
 for j in range(num_eras):
-    a1 = X
-    a2 = sigmoid(np.dot(a1, syn0))
-    a3 = sigmoid(np.dot(a2, syn1))
+    (a1, a2, a3) = compute_prediction(X, syn0, syn1)
 
-    a3_error = Y - a3
+    a3_error = Yin - a3
     a3_delta = a3_error * sigmoid(derivative(a3))
 
     a2_error = a3_delta.dot(syn1.T)  # transposed matrix
     a2_delta = a2_error * sigmoid(derivative(a2))
 
-    # if (j % 20) == 0:
-    # print("Error: " + str(np.mean(np.abs(a3_error))))
+    # if (j % 200) == 0:
+    #   print("Error: " + str(np.mean(np.abs(a3_error))))
 
     # update weights
     syn1 += a2.T.dot(a3_delta)
     syn0 += a1.T.dot(a2_delta)
 
-print("Output after training")
-a3[a3 >= 0.5] = 1
-a3[a3 < 0.5] = 0
+    progress_bar.update(1)
 
-Yout = postprocess_y(a3)
-print("Original: ")
-print(chosen_outputs)
-print("Calculated: ")
-print(Yout)
-accuracy = get_accuracy(chosen_outputs, Yout)
-print("Accuracy: " + str(accuracy) + "%")
+progress_bar.close()
+
+# print("Output after training")
+a3 = revise_output(a3)
+
+Yout_training = postprocess_y(a3)
+# print("Original: ")
+# print(chosen_training_outputs)
+# print("Calculated: ")
+# print(Yout_training)
+accuracy = get_accuracy(chosen_training_outputs, Yout_training)
+print("Training accuracy: " + str(accuracy) + "%")
+
+# ==========================
+# TESTING PHASE
+# ==========================
+print("Testing unknown images")
+(a1, a2, a3) = compute_prediction(testing_input, syn0, syn1)
+# print("Output after testing")
+a3_testing = revise_output(a3)
+Yout_testing = postprocess_y(a3_testing)
+# print("Original (testing): ")
+# print(chosen_testing_outputs)
+# print("Calculated (testing): ")
+# print(Yout_testing)
+accuracy_testing = get_accuracy(chosen_testing_outputs, Yout_testing)
+print("Testing accuracy: " + str(accuracy_testing) + "%")
