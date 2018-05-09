@@ -1,5 +1,6 @@
 import pylab as pl
 import numpy as np
+import random
 from tqdm import tqdm
 from sklearn.datasets import load_digits
 
@@ -82,10 +83,13 @@ digits = load_digits()
 # INITIALIZING PARAMETERS
 # ==========================
 
-images_num_training_set = 100  # number of images in the training set
-images_num_testing_set = 10  # number of images in the testing set
+# training_set + testing set images must be less than len(digits.images)
+images_num_training_set = 1200  # number of images in the training set
+images_num_testing_set = 200  # number of images in the testing set
+
+num_eras = 2000  # number of eras in the training phase
+
 hidden_nodes_n = 20  # set the number of hidden layers (between 64 and 10)
-num_eras = 10000  # number of eras in the training phase
 
 # semi-static fields
 _image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
@@ -95,12 +99,17 @@ _labels_num = 10  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
 # SELECTING THE DATA
 # ==========================
 
-# select the images and their targets for the training and the testing sets
-chosen_training_images = digits.images[:images_num_training_set]
-chosen_training_outputs = targets[:images_num_training_set]
+random_numbers = np.array(random.sample(range(0, len(digits.images)), images_num_training_set + images_num_testing_set))
 
-chosen_testing_images = digits.images[images_num_training_set:images_num_training_set + images_num_testing_set]
-chosen_testing_outputs = targets[images_num_training_set:images_num_training_set + images_num_testing_set]
+training_indexes = random_numbers[:images_num_training_set]
+testing_indexes = random_numbers[images_num_training_set:images_num_training_set + images_num_testing_set]
+
+# select the images and their targets for the training and the testing sets
+chosen_training_images = digits.images[training_indexes]
+chosen_training_outputs = targets[training_indexes]
+
+chosen_testing_images = digits.images[testing_indexes]
+chosen_testing_outputs = targets[testing_indexes]
 
 # convert from matrices into arrays
 # training sets
@@ -181,3 +190,27 @@ Yout_testing = postprocess_y(a3_testing)
 # print(Yout_testing)
 accuracy_testing = get_accuracy(chosen_testing_outputs, Yout_testing)
 print("Testing accuracy: " + str(accuracy_testing) + "%")
+
+# ==========================
+# STORING WEIGHTS
+# ==========================
+syn0_filename = 'syn0_eras_' + str(num_eras) + '_num_train_' + str(images_num_training_set) + '.txt'
+syn1_filename = 'syn1_eras_' + str(num_eras) + '_num_train_' + str(images_num_training_set) + '.txt'
+
+np.savetxt(syn0_filename, syn0)
+np.savetxt(syn1_filename, syn1)
+
+# ==========================
+# RETRIEVE WEIGHTS FROM FILE
+# ==========================
+# Read the array from disk
+syn0_raw = np.loadtxt(syn0_filename)
+syn1_raw = np.loadtxt(syn1_filename)
+
+# re-set the weights from file
+new_syn0 = syn0_raw.reshape((_input_nodes_n, hidden_nodes_n))
+new_syn1 = syn1_raw.reshape((hidden_nodes_n, _output_nodes_n))
+
+# Check that the retrieved weights from the disk are the same
+assert np.all(new_syn0 == syn0)
+assert np.all(new_syn1 == syn1)
