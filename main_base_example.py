@@ -22,10 +22,10 @@ for j in range(60000):
     a3 = nnf.sigmoid(np.dot(a2, syn1))
 
     a3_error = y - a3
-    a3_delta = a3_error * nnf.sigmoid(nnf.derivative(a3))
+    a3_delta = a3_error * nnf.derivative(a3)
 
     a2_error = a3_delta.dot(syn1.T)  # transposed matrix
-    a2_delta = a2_error * nnf.sigmoid(nnf.derivative(a2))
+    a2_delta = a2_error * nnf.derivative(a2)
 
     if (j % 10000) == 0:
         print("Error: " + str(np.mean(np.abs(a3_error))))

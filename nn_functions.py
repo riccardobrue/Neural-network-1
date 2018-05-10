@@ -1,12 +1,13 @@
 import numpy as np
 
+
 def derivative(x):
     return x * (1 - x)
 
 
 def sigmoid(x):
-    # return 1 / (1 + np.exp(-x))  # this gives an overflow --> it is not important
-    return .5 * (1 + np.tanh(.5 * x))  # same as previous --> solves the overflow problem
+    return 1 / (1 + np.exp(-x))  # this gives an overflow --> it is not important
+    # return .5 * (1 + np.tanh(.5 * x))  # same as previous --> solves the overflow problem
 
 
 def preprocess_y(y, labels_num):
@@ -36,11 +37,28 @@ def get_accuracy(y1, y2):
     return (count * 100) / size
 
 
-def compute_prediction(X, syn0, syn1):
+# feed forward function
+def compute_prediction_2(X, Theta1, Theta2):
     a1 = X
-    a2 = sigmoid(np.dot(a1, syn0))
-    a3 = sigmoid(np.dot(a2, syn1))
+    # a2 = sigmoid(np.dot(a1, syn0))  # np.dot --> product between two arrays
+    # a3 = sigmoid(np.dot(a2, syn1))
+
+    z2 = a1.dot(Theta1.T)
+    a2 = sigmoid(z2)
+
+    z3 = a2.dot(Theta2.T)
+    a3 = sigmoid(z3)
+
     return a1, a2, a3
+
+
+# feed forward function
+def compute_prediction_3(X, syn0, syn1, syn2):
+    a1 = X
+    a2 = sigmoid(np.dot(a1, syn0))  # np.dot --> product between two arrays
+    a3 = sigmoid(np.dot(a2, syn1))
+    a4 = sigmoid(np.dot(a3, syn2))
+    return a1, a2, a3, a4
 
 
 def revise_output(data):

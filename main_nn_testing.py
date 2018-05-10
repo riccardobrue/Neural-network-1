@@ -16,8 +16,8 @@ digits = load_digits()
 # ==========================
 # filename format: "num_era num_train input x hidden x output"
 
-filename_num_eras = 2000  # number of eras in the training phase
-filename_images_num_training_set = 1200  # number of images in the training set
+filename_num_eras = 200000  # number of eras in the training phase
+filename_images_num_training_set = 1500  # number of images in the training set
 _image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
 hidden_nodes_n = 20  # set the number of hidden layers (between 64 and 10)
 _labels_num = 10  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
@@ -30,7 +30,7 @@ postfix_filename = '_eras_' + str(filename_num_eras) + '_num_train_' + str(
     filename_images_num_training_set) + '_' + str(_input_nodes_n) + 'x' + str(hidden_nodes_n) + 'x' + str(
     _output_nodes_n) + '.txt'
 
-images_num_testing_set = 200  # number of images in the testing set
+images_num_testing_set = 10  # number of images in the testing set
 
 # ==========================
 # SELECTING THE DATA
@@ -67,7 +67,7 @@ syn1 = syn1_raw.reshape((hidden_nodes_n, _output_nodes_n))
 # TESTING IMAGES
 # ==========================
 print("Testing unknown images")
-(a1, a2, a3) = nnf.compute_prediction(testing_input, syn0, syn1)
+(a1, a2, a3) = nnf.compute_prediction_2(testing_input, syn0, syn1)
 # print("Output after testing")
 a3_testing = nnf.revise_output(a3)
 Yout_testing = nnf.postprocess_y(a3_testing)
