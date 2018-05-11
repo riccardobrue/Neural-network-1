@@ -100,7 +100,6 @@ X = training_inputs
 # Pre-processing output data for a multi-label classification (i.e. (3)-->[0 0 0 1 0 0 0 0 0 0])
 Y = nnf.onehot_y(training_outputs)
 
-print(Y)
 # ==========================
 # INITIALIZING THE NEURAL NETWORK
 # ==========================

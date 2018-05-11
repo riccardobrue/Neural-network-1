@@ -6,19 +6,19 @@ import cv2
 import time
 import pylab as pl
 
-# ==========================
-# WEIGHTS FILENAME PARAMETERS
-# ==========================
-store_data = False # If true: stores frames for training; if false: runtime recognition based on training
+# --------------------------
+store_data = False  # If true: stores frames for training; if false: runtime recognition based on training
+# --------------------------
 
 if store_data:
-    # filename = 'WithoutPerson.txt'
-    filename = 'WithPerson.txt'
+    filename = 'WithoutPerson.txt'
+    #filename = 'WithPerson.txt'
     stored_frames = []
     img_counter = 0
+    max_samples = 1000
 else:
     # ==========================
-    # RETRIEVE AND SETTING WEIGHTS FROM FILE
+    # WEIGHTS FILENAME PARAMETERS
     # ==========================
     # filename format: "num_era num_train input x hidden x output"
     filename_num_epochs = nn_parameters.num_epochs  # number of eras in the training phase
@@ -36,7 +36,9 @@ else:
         _output_units) + '.txt'
 
     input_num_testing = nn_parameters.input_num_testing  # number of images in the testing set
-
+    # ==========================
+    # RETRIEVE AND SETTING WEIGHTS FROM FILE
+    # ==========================
     Theta1_filename = 'Theta1' + postfix_filename
     Theta2_filename = 'Theta2' + postfix_filename
     # Read the array from disk
@@ -62,6 +64,10 @@ while True:
     if k % 256 == 27:
         # ESC pressed
         print("Escape hit, closing...")
+        break
+    elif store_data and img_counter == max_samples:
+        #max samples num reached
+        print("All the samples have been stored")
         break
     elapsed_time = time.time() - start_time
     if elapsed_time > .1:  # every 1 second
