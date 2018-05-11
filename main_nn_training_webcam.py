@@ -13,8 +13,6 @@ import nn_parameters
 # ==========================
 # INITIALIZING PARAMETERS
 # ==========================
-data_with_size = 439
-data_without_size = 391
 filename_with = 'WithPerson.txt'
 filename_without = 'WithoutPerson.txt'
 
@@ -39,6 +37,9 @@ _labels_num = 2  # output classes (0,1)--> 2 labels
 # Read the data from files on the disk
 data_with_raw = np.loadtxt(filename_with)
 data_without_raw = np.loadtxt(filename_without)
+
+data_with_size = len(data_with_raw)
+data_without_size = len(data_without_raw)
 
 data_with = data_with_raw.reshape((data_with_size, _image_dimension))
 data_without = data_without_raw.reshape((data_without_size, _image_dimension))

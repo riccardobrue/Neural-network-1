@@ -63,11 +63,7 @@ Theta2 = np.matrix(Theta2_raw.reshape((_output_units, (hidden_units + 1))))
 # ==========================
 print("Testing phase (...)")
 h = nnf.forward_propagate(input_img, Theta1, Theta2, output_only=True)
-
 # Returns the indices of the maximum values along an axis and creates an array
 y_testing_predicted = np.array(np.argmax(h, axis=1))
-
-print("Calculating the testing accuracy (...)")
 y_predicted_testing_norm = np.squeeze(np.asarray(y_testing_predicted))
-
 print("Prediction: " + str(y_predicted_testing_norm))

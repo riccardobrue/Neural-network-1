@@ -9,32 +9,34 @@ import pylab as pl
 # ==========================
 # WEIGHTS FILENAME PARAMETERS
 # ==========================
-retrieve_data = False # If true: stores frames for training; if false: runtime recognition based on training
+store_data = False # If true: stores frames for training; if false: runtime recognition based on training
 
-# filename format: "num_era num_train input x hidden x output"
-
-filename_num_epochs = nn_parameters.num_epochs  # number of eras in the training phase
-filename_input_num_testing = nn_parameters.input_num_training  # number of images in the training set
-_image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
-hidden_units = nn_parameters.hidden_units  # set the number of hidden layers (between 64 and 10)
-_labels_num = 2  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
-
-_input_units = _image_dimension  # because the images are 8x8 pixes = 64 pixels
-_output_units = _labels_num  # numbers from 0 to 9
-
-# setting the correct filename given the parameters
-postfix_filename = '_WebCam_epochs_' + str(filename_num_epochs) + '_num_train_' + str(
-    filename_input_num_testing) + '_' + str(_input_units) + 'x' + str(hidden_units) + 'x' + str(
-    _output_units) + '.txt'
-
-input_num_testing = nn_parameters.input_num_testing  # number of images in the testing set
-
-# ==========================
-# RETRIEVE AND SETTING WEIGHTS FROM FILE
-# ==========================
-if retrieve_data:
+if store_data:
+    # filename = 'WithoutPerson.txt'
+    filename = 'WithPerson.txt'
     stored_frames = []
+    img_counter = 0
 else:
+    # ==========================
+    # RETRIEVE AND SETTING WEIGHTS FROM FILE
+    # ==========================
+    # filename format: "num_era num_train input x hidden x output"
+    filename_num_epochs = nn_parameters.num_epochs  # number of eras in the training phase
+    filename_input_num_testing = nn_parameters.input_num_training  # number of images in the training set
+    _image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
+    hidden_units = nn_parameters.hidden_units  # set the number of hidden layers (between 64 and 10)
+    _labels_num = 2  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
+
+    _input_units = _image_dimension  # because the images are 8x8 pixes = 64 pixels
+    _output_units = _labels_num  # numbers from 0 to 9
+
+    # setting the correct filename given the parameters
+    postfix_filename = '_WebCam_epochs_' + str(filename_num_epochs) + '_num_train_' + str(
+        filename_input_num_testing) + '_' + str(_input_units) + 'x' + str(hidden_units) + 'x' + str(
+        _output_units) + '.txt'
+
+    input_num_testing = nn_parameters.input_num_testing  # number of images in the testing set
+
     Theta1_filename = 'Theta1' + postfix_filename
     Theta2_filename = 'Theta2' + postfix_filename
     # Read the array from disk
@@ -49,7 +51,6 @@ else:
 # ==========================
 cam = cv2.VideoCapture(0)
 cv2.namedWindow("NN webcam")
-img_counter = 0
 start_time = time.time()
 while True:
     ret, frame = cam.read()  # frame is a (480,640,3) matrix RGB
@@ -76,37 +77,31 @@ while True:
         frame_arr = np.ravel(frame).reshape((1, frame_dim))
         input_img = (16 / 255) * np.array(frame_arr)
 
-        if retrieve_data:
+        if store_data:
             # ==========================
-            # STORING FRAMES
+            # STORE FRAME
             # ==========================
             if img_counter > 0:  # skip the first black frame
                 stored_frames.append(input_img)
             img_counter += 1
         else:
             # ==========================
-            # TESTING FRAMES
+            # PREDICT FRAME
             # ==========================
-            print("Testing frame (...)")
             h = nnf.forward_propagate(input_img, Theta1, Theta2, output_only=True)
             # Returns the indices of the maximum values along an axis and creates an array
             y_testing_predicted = np.array(np.argmax(h, axis=1))
-
-            print("Calculating the testing accuracy (...)")
             y_predicted_testing_norm = np.squeeze(np.asarray(y_testing_predicted))
-
             print("Prediction: " + str(y_predicted_testing_norm))
-
         start_time = time.time()
 
 cam.release()
 cv2.destroyAllWindows()
 
-if retrieve_data:
+if store_data:
     # ==========================
-    # STORING INFORMATION INSIDE FILE
+    # STORING FRAMES INSIDE FILE
     # ==========================
-    filename = 'WithoutPerson.txt'
     np_arr = np.array(stored_frames)
     print(np_arr.shape)
     np.savetxt(filename, np.matrix(np_arr))
