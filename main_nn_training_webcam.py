@@ -11,26 +11,13 @@ from scipy.optimize import minimize
 import nn_parameters
 
 # ==========================
-# IMPORTING THE DATA
-# ==========================
-
-# import the dataset
-digits = load_digits()
-(data, targets) = load_digits(return_X_y=True)
-
-# ==========================
-# VISUALIZING AN IMAGE
-# ==========================
-
-# show the first image of the dataset
-# pl.gray()
-# pl.matshow(digits.images[0])
-# pl.show()
-# prints the matrix which composes the image
-
-# ==========================
 # INITIALIZING PARAMETERS
 # ==========================
+data_with_size = 439
+data_without_size = 391
+filename_with = 'WithPerson.txt'
+filename_without = 'WithoutPerson.txt'
+
 # training_set + testing set images must be less than len(digits.images)
 input_num_training = nn_parameters.input_num_training  # number of images in the training set
 input_num_testing = nn_parameters.input_num_testing  # number of images in the training set
@@ -43,23 +30,59 @@ learning_rate = 1
 
 # semi-static fields
 _image_dimension = 64  # 8x8 pixels --> 64 pixels in total --> 64 features
-_labels_num = 10  # output classes (0,1,2,3,4,5,6,7,8,9)--> 10 labels
+_img_side = 8
+_labels_num = 2  # output classes (0,1)--> 2 labels
+
+# ==========================
+# IMPORTING THE DATA
+# ==========================
+# Read the data from files on the disk
+data_with_raw = np.loadtxt(filename_with)
+data_without_raw = np.loadtxt(filename_without)
+
+data_with = data_with_raw.reshape((data_with_size, _image_dimension))
+data_without = data_without_raw.reshape((data_without_size, _image_dimension))
+
+ones = np.ones((data_with.shape[0], 1))
+zeros = np.zeros((data_without.shape[0], 1))
+
+data_with = np.hstack((data_with, ones))  # add the 1 label (1=with person)
+data_without = np.hstack((data_without, zeros))  # add the 0 label (0=without person)
+
+dataset = np.concatenate((data_with, data_without), axis=0)  # merge the two datasets
+dataset_dim = dataset.shape[0]
+np.random.shuffle(dataset)  # shuffle the dataset
+
+Xdata_raw = dataset[:, :_image_dimension]  # (830,64)
+
+Xdata = Xdata_raw.ravel().reshape(dataset_dim, _img_side, _img_side)  # (830,8,8)
+Ydata = dataset[:, _image_dimension]  # (830,1)
+
+# ==========================
+# VISUALIZING AN IMAGE
+# ==========================
+
+# show the first image of the dataset
+#pl.gray()
+#pl.matshow(Xdata[34])
+#pl.show()
+# prints the matrix which composes the image
+
 
 # ==========================
 # SELECTING THE DATA
 # ==========================
-
-random_numbers = np.array(random.sample(range(0, len(digits.images)), input_num_training + input_num_testing))
+random_numbers = np.array(random.sample(range(0, len(Xdata)), input_num_training + input_num_testing))
 
 training_indexes = random_numbers[:input_num_training]
 testing_indexes = random_numbers[input_num_training:input_num_training + input_num_testing]
 
 # select the images and their targets for the training and the testing sets
-chosen_training_images = digits.images[training_indexes]
-chosen_training_outputs = targets[training_indexes]
+chosen_training_images = Xdata[training_indexes]
+chosen_training_outputs = Ydata[training_indexes]
 
-chosen_testing_images = digits.images[testing_indexes]
-chosen_testing_outputs = targets[testing_indexes]
+chosen_testing_images = Xdata[testing_indexes]
+chosen_testing_outputs = Ydata[testing_indexes]
 
 # convert from matrices into arrays
 # training sets
@@ -76,6 +99,7 @@ X = training_inputs
 # Pre-processing output data for a multi-label classification (i.e. (3)-->[0 0 0 1 0 0 0 0 0 0])
 Y = nnf.onehot_y(training_outputs)
 
+print(Y)
 # ==========================
 # INITIALIZING THE NEURAL NETWORK
 # ==========================
@@ -141,7 +165,7 @@ print("Testing accuracy: " + str(accuracy) + "%")
 # ==========================
 # STORING WEIGHTS
 # ==========================
-postfix_filename = '_epochs_' + str(num_epochs) + '_num_train_' + str(
+postfix_filename = '_WebCam_epochs_' + str(num_epochs) + '_num_train_' + str(
     input_num_training) + '_' + str(_input_units) + 'x' + str(hidden_units) + 'x' + str(
     _output_units) + '.txt'
 
