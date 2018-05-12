@@ -11,8 +11,8 @@ store_data = False  # If true: stores frames for training; if false: runtime rec
 # --------------------------
 
 if store_data:
-    filename = 'WithoutPerson.txt'
-    #filename = 'WithPerson.txt'
+    #filename = 'WithoutPerson.txt'
+    filename = 'WithPerson.txt'
     stored_frames = []
     img_counter = 0
     max_samples = 1000
