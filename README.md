@@ -11,3 +11,5 @@ These files can be used to retrieve back weights without re-train the network. "
 The dataset is based on handwritten digits from "sklearn.datasets.load_digits".
 
 This project also includes a "main_base_example" where a neural network is trained to compute a XOR function.
+
+Added webcam person recognition with training
